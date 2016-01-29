@@ -1,0 +1,21 @@
+val distFile = sc.textFile("/Users/oventura/Downloads/NASA_access_log_Aug95", 8)
+
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{StructType,StructField,StringType};
+
+val schemaString = "c1 c2 c3"
+val schema =StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, true)))
+val rowRDD = distFile.map(_.split("-")).map(p => Row(p(0), p(1).trim,p(2)))
+val logs_nasa = sqlContext.createDataFrame(rowRDD, schema)
+logs_nasa.registerTempTable("logs_nasa")
+val results = sqlContext.sql("SELECT c1,count(*) veces FROM logs_nasa group by c1")
+val rd5 = results.map( x => (x.getAs("veces").toString.toInt,x.getAs("c1").toString))
+rd5.sortByKey(false).take(1)
+
+
+
+val results2 = sqlContext.sql("SELECT c1,count(*) veces FROM logs_nasa group by c1 order by veces desc")
+results2.map(x => (x.getAs("c1").toString)).take(1)
+
+     
+val df = sqlContext.sql("SELECT * FROM text.`/Users/oventura/Downloads/NASA_access_log_Aug95`").map(x => (x.getAs("value").toString)).map(x => x.split("-"))
